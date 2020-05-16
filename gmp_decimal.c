@@ -15,9 +15,10 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     // strip excess zero's from end
     size_t idx = str_len - 1;
     while (src[idx] == '0') {
-        src[idx] = '\0';
         idx--;
     }
+    src[idx + 1] = '\0';
+
     mpz_inits(fractional_part, numerator, denominator, NULL);
     token = strtok(src, PERIOD);
 
