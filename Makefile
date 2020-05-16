@@ -13,7 +13,7 @@ gmp_decimal: main.c $(OBJ)
 	$(CC) -o gmp_decimal $^ $(CFLAGS) $(LIBS)
 
 valgrind: all
-	valgrind ./gmp_decimal
+	valgrind --leak-check=full ./gmp_decimal
 
 run: all
 	./gmp_decimal
