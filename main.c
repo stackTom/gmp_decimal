@@ -6,9 +6,9 @@ int main(void) {
     char *input = "10.50000";
     mpq_t i;
     mpq_init(i);
-    mpq_set_decimal_str(i, input, 10);
+    int ret = mpq_set_decimal_str(i, input, 10);
     mpq_out_str(stdout, 10, i);
-    printf("\n");
+    printf("\nret: %d\n", ret);
     mpq_clear(i);
     
     return 0;

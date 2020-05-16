@@ -22,20 +22,21 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     token = strtok(src, PERIOD);
 
     int first_token = 1;
+    int ret1, ret2, ret3, ret4 = 0;
     while (token) {
         if (first_token) {
             first_token = 0;
-            mpz_set_str(numerator, token, base);
+            ret1 = mpz_set_str(numerator, token, base);
         } else {
             // second token (aka decimal part)
-            mpz_set_str(fractional_part, token, base);
+            ret2 = mpz_set_str(fractional_part, token, base);
             // + 1 for extra 0 for proper denominator, + 1 for null terminator
             size_t denominator_str_len = strlen(token) + 1;
             char *denominator_str = malloc((denominator_str_len + 1)* sizeof(char));
             denominator_str[0] = '1';
             memset(denominator_str + 1, '0', denominator_str_len - 1);
             denominator_str[denominator_str_len] = '\0';
-            mpz_set_str(denominator, denominator_str, base);
+            ret3 = mpz_set_str(denominator, denominator_str, base);
             mpz_mul(numerator, denominator, numerator);
             mpz_add(numerator, numerator, fractional_part);
             free(denominator_str);
@@ -52,7 +53,7 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     strcpy(rational_str + numerator_str_len, "/");
     strcpy(rational_str + numerator_str_len + 1, denominator_str);
 
-    mpq_set_str(rop, rational_str, base);
+    ret4 = mpq_set_str(rop, rational_str, base);
     mpq_canonicalize(rop);
 
     free(src);
@@ -61,7 +62,7 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     free(rational_str);
     mpz_clears(fractional_part, numerator, denominator, NULL);
 
-    return 0;
+    return (ret1 == -1 || ret2 == -1 || ret3 == -1 || ret4 == -1) ? -1 : 0;
 }
 
 char * mpq_get_decimal_str(char *str, int base, const mpq_t op) {
