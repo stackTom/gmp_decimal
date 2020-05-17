@@ -2,6 +2,6 @@
 #define GMP_DECIMAL_H
 #include "gmp.h"
 int mpq_set_decimal_str(mpq_t rop, const char *str, int base);
-char * mpq_get_decimal_str(char *str, int base, const mpq_t op);
+char * mpq_get_decimal_str(char *str, int base, const mpq_t op, size_t max_decimals);
 #endif
 

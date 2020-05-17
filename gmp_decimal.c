@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #define PERIOD "."
+#define FORWARD_SLASH "/"
 
 int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     size_t str_len = strlen(str);
@@ -25,6 +26,11 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
 
     // first token (aka integer part)
     ret1 = mpz_set_str(numerator, token, base);
+    int is_negative = 0;
+    if (str[0] == '-') {
+        is_negative = 1;
+        mpz_mul_si(numerator, numerator, -1);
+    }
     token = strtok(NULL, PERIOD);
 
     // second token (aka decimal part)
@@ -43,13 +49,21 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     char *numerator_str = mpz_get_str(NULL, 10, numerator);
 
     denominator_str = mpz_get_str(NULL, 10, denominator);
-    // + 1 for null terminator, +1 for "/"
+    // + 1 for null terminator, + 1 for "/"
     size_t numerator_str_len = strlen(numerator_str);
     size_t rational_str_len = numerator_str_len + strlen(denominator_str) + 1;
+    if (is_negative) {
+        rational_str_len++;
+    }
     char *rational_str = malloc((rational_str_len + 1) * sizeof(char));
-    strcpy(rational_str, numerator_str);
-    strcpy(rational_str + numerator_str_len, "/");
-    strcpy(rational_str + numerator_str_len + 1, denominator_str);
+    size_t start_cpy = 0;
+    if (is_negative) {
+        rational_str[0] = '-';
+        start_cpy++;
+    }
+    strcpy(rational_str + start_cpy, numerator_str);
+    strcpy(rational_str + start_cpy + numerator_str_len, FORWARD_SLASH);
+    strcpy(rational_str + start_cpy + numerator_str_len + 1, denominator_str);
 
     ret4 = mpq_set_str(rop, rational_str, base);
     mpq_canonicalize(rop);
@@ -63,8 +77,81 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     return (ret1 == -1 || ret2 == -1 || ret3 == -1 || ret4 == -1) ? -1 : 0;
 }
 
-char * mpq_get_decimal_str(char *str, int base, const mpq_t op) {
-    
-    return NULL;
+static char * mpz_long_division(char *str, int base, mpz_t numerator, mpz_t denominator, size_t max_decimals) {
+    mpz_t quotient, remainder;
+    mpz_inits(quotient, remainder, NULL);
+
+    size_t is_negative = 0;
+    if (mpz_cmp_si(numerator, 0) < 0) {
+        is_negative = 1;
+        mpz_mul_si(numerator, numerator, -1);
+    } else if (mpz_cmp_si(denominator, 0) < 0) {
+        is_negative = 1;
+        mpz_mul_si(denominator, denominator, -1);
+    }
+
+    mpz_tdiv_qr(quotient, remainder, numerator, denominator);
+
+    char *integer_part = mpz_get_str(NULL, base, quotient);
+    // + 1 for the decimal point
+    size_t integer_part_len = strlen(integer_part);
+    size_t result_len = integer_part_len + 1 + max_decimals;
+    size_t start_cpy = 0;
+    if (is_negative) {
+        result_len++;
+        start_cpy++;
+    }
+    // + 1 for null terminator
+    char *result = malloc((result_len + 1) * sizeof(char));
+    strcpy(result + start_cpy, integer_part);
+    size_t chars_copied = integer_part_len;
+    if (is_negative) {
+        result[0] = '-';
+        chars_copied++;
+    }
+    result[chars_copied] = '.';
+    chars_copied++;
+
+    size_t decimals = 0;
+    while (mpz_cmp(remainder, denominator) < 0 && mpz_cmp_ui(remainder, 0) && decimals < max_decimals) {
+        mpz_mul_ui(remainder, remainder, 10);
+        mpz_tdiv_qr(quotient, remainder, remainder, denominator);
+        char *quotient_str = mpz_get_str(NULL, base, quotient);
+        size_t quotient_len = strlen(quotient_str);
+        strncpy(result + chars_copied, quotient_str, max_decimals - decimals);
+        chars_copied += quotient_len;
+        free(quotient_str);
+        decimals += quotient_len;
+    }
+    result[chars_copied] = '\0';
+
+    free(integer_part);
+    mpz_clears(quotient, remainder, NULL);
+
+    return result;
+}
+
+char * mpq_get_decimal_str(char *str, int base, const mpq_t op, size_t max_decimals) {
+    char *rational_str = mpq_get_str(NULL, base, op);
+    char *token = NULL;
+    mpz_t numerator, denominator;
+    mpz_inits(numerator, denominator, NULL);
+
+    token = strtok(rational_str, FORWARD_SLASH);
+    mpz_set_str(numerator, token, base);
+    token = strtok(NULL, FORWARD_SLASH);
+    mpz_set_str(denominator, token, base);
+
+    char *res = mpz_long_division(str, base, numerator, denominator, max_decimals);
+
+    if (str) {
+        strcpy(str, res);
+        return str;
+    }
+
+    free(rational_str);
+    mpz_clears(numerator, denominator, NULL);
+
+    return res;
 }
 
