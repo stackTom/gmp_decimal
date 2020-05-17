@@ -13,6 +13,13 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     int ret1, ret2, ret3, ret4 = 0;
     mpz_t fractional_part, numerator, denominator;
 
+    int is_negative = 0;
+    size_t start_cpy = 0;
+    if (str[0] == '-') {
+        is_negative = 1;
+        start_cpy++;
+    }
+
     strcpy(src, str);
     // strip excess zero's from end
     size_t idx = str_len - 1;
@@ -25,12 +32,7 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
     token = strtok(src, PERIOD);
 
     // first token (aka integer part)
-    ret1 = mpz_set_str(numerator, token, base);
-    int is_negative = 0;
-    if (str[0] == '-') {
-        is_negative = 1;
-        mpz_mul_si(numerator, numerator, -1);
-    }
+    ret1 = mpz_set_str(numerator, token + start_cpy, base);
     token = strtok(NULL, PERIOD);
 
     // second token (aka decimal part)
@@ -56,10 +58,8 @@ int mpq_set_decimal_str(mpq_t rop, const char *str, int base) {
         rational_str_len++;
     }
     char *rational_str = malloc((rational_str_len + 1) * sizeof(char));
-    size_t start_cpy = 0;
     if (is_negative) {
         rational_str[0] = '-';
-        start_cpy++;
     }
     strcpy(rational_str + start_cpy, numerator_str);
     strcpy(rational_str + start_cpy + numerator_str_len, FORWARD_SLASH);
@@ -113,7 +113,7 @@ static char * mpz_long_division(char *str, int base, mpz_t numerator, mpz_t deno
     chars_copied++;
 
     size_t decimals = 0;
-    while (mpz_cmp(remainder, denominator) < 0 && mpz_cmp_ui(remainder, 0) && decimals < max_decimals) {
+    while (mpz_cmp(remainder, denominator) < 0 && mpz_cmp_ui(remainder, 0) > 0 && decimals < max_decimals) {
         mpz_mul_ui(remainder, remainder, 10);
         mpz_tdiv_qr(quotient, remainder, remainder, denominator);
         char *quotient_str = mpz_get_str(NULL, base, quotient);
