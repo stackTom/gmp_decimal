@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -L/Users/fery/Desktop/build/gmp/lib -I/Users/fery/Desktop/build/gmp/include
+CFLAGS = -g
 DEPS =
 OBJ = gmp_decimal.o
 LIBS = -lgmp
