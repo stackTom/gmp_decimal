@@ -1,7 +1,7 @@
-#include "gmp_decimal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "gmp.h"
+#include "gmp_decimal.h"
 
 int main(void) {
     char *input = "66580459685986459684695112322.34323432423432242342";
